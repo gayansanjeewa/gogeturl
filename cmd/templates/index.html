@@ -12,5 +12,12 @@
         </label>
         <button type="submit">Analyze</button>
     </form>
+
+    {{ if .Message }}
+    <p style="color: green;">{{ .Message }}</p>
+    {{ end }}
+    {{ if .Error }}
+    <p style="color: red;">{{ .Error }}</p>
+    {{ end }}
 </body>
 </html>
