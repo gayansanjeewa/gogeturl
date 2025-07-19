@@ -1,13 +1,16 @@
 package handler
 
 import (
+	"github.com/gayansanjeewa/gogeturl/internal/utils"
+)
+
+import (
 	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// AnalyzeHandler handles POST /analyze
 func AnalyzeHandler(context *gin.Context) {
 	url := context.PostForm("url")
 
@@ -15,6 +18,14 @@ func AnalyzeHandler(context *gin.Context) {
 		slog.Warn("URL is missing in the form submission")
 		context.HTML(http.StatusBadRequest, "index.html", gin.H{
 			"Error": "Please provide a URL.",
+		})
+		return
+	}
+
+	if err := utils.ValidateURL(url); err != nil {
+		slog.Warn("Invalid URL", "error", err)
+		context.HTML(http.StatusBadRequest, "index.html", gin.H{
+			"Error": err.Error(),
 		})
 		return
 	}
