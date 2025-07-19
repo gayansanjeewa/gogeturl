@@ -15,11 +15,13 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
+
+	router.LoadHTMLGlob("./cmd/templates/*")
 	slog.Info("Starting the server", "port", 8080)
 
 	router.GET("/", func(context *gin.Context) {
-		slog.Info("Listening root route")
-		context.String(http.StatusOK, "Go get url! 🏃‍♂️‍➡️️")
+		slog.Info("Rendering index template")
+		context.HTML(http.StatusOK, "index.html", nil)
 	})
 
 	if err := router.Run(":8080"); err != nil {
