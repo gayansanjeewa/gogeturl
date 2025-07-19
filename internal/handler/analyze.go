@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/gayansanjeewa/gogeturl/internal/analyzer"
 	"github.com/gayansanjeewa/gogeturl/internal/utils"
 )
 
@@ -31,6 +32,18 @@ func AnalyzeHandler(context *gin.Context) {
 	}
 
 	slog.Info("Received URL for analysis", "url", url)
+
+	doc, err := analyzer.FetchAndParse(url)
+	if err != nil {
+		slog.Error("Failed to fetch/parse HTML", "error", err)
+		context.HTML(http.StatusInternalServerError, "index.html", gin.H{
+			"Error": "Failed to fetch or parse the URL: " + err.Error(),
+		})
+		return
+	}
+
+	// TEMP: confirm parse succeeded
+	slog.Info("HTML parsed successfully", "nodeType", doc.Type)
 
 	// Placeholder response
 	context.HTML(http.StatusOK, "index.html", gin.H{
