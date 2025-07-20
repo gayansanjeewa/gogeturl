@@ -25,6 +25,7 @@ func main() {
 	slog.Info("Starting the server", "port", 8080)
 
 	router.POST("/analyze", handler.AnalyzeHandler)
+
 	router.GET("/", func(context *gin.Context) {
 		slog.Info("Rendering index template")
 		context.HTML(http.StatusOK, "index.html", nil)

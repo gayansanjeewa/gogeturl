@@ -45,8 +45,20 @@ func AnalyzeHandler(context *gin.Context) {
 	// TEMP: confirm parse succeeded
 	slog.Info("HTML parsed successfully", "nodeType", doc.Type)
 
-	// Placeholder response
+	title := analyzer.ExtractTitle(doc)
+	headings := analyzer.CountHeadings(doc)
+
+	internal, external, broken, err := analyzer.AnalyzeLinks(doc, url)
+	if err != nil {
+		slog.Warn("Link analysis failed", "error", err)
+	}
+
 	context.HTML(http.StatusOK, "index.html", gin.H{
-		"Message": "Analyzing: " + url,
+		"Message":       "Analyzing: " + url,
+		"TitleTag":      title,
+		"Headings":      headings,
+		"InternalLinks": internal,
+		"ExternalLinks": external,
+		"BrokenLinks":   broken,
 	})
 }

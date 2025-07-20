@@ -19,5 +19,25 @@
     {{ if .Error }}
     <p style="color: red;">{{ .Error }}</p>
     {{ end }}
+
+    {{ if .TitleTag }}
+    <h2>Page Title</h2>
+    <p>{{ .TitleTag }}</p>
+    {{ end }}
+
+    {{ if .Headings }}
+    <h2>Headings Count</h2>
+    <ul>
+        {{ range $level, $count := .Headings }}
+        <li>{{ $level }}: {{ $count }}</li>
+        {{ end }}
+    </ul>
+    <h2>Link Analysis</h2>
+    <ul>
+        <li>Internal Links: {{ .InternalLinks }}</li>
+        <li>External Links: {{ .ExternalLinks }}</li>
+        <li>Broken Links: {{ .BrokenLinks }}</li>
+    </ul>
+    {{ end }}
 </body>
 </html>
