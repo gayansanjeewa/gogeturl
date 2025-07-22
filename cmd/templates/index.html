@@ -1,52 +1,77 @@
 <!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Go get url! 🏃‍♂️‍</title>
+    <title>Go get url! 🏃‍♂️‍➡</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css" onerror="console.error('Failed to load CSS')" onload="console.log('CSS loaded successfully')">
 </head>
 <body>
-    <h1>Go get url! 🏃‍♂️‍</h1>
-    <p>This is a simple webpage analyzer. Just past the url of the webpage you want to get insight about and hit Analyze!</p>
-    <form method="POST" action="/analyze">
-        <label>
-            <input type="text" name="url" placeholder="Enter URL" required />
-        </label>
-        <button type="submit">Analyze</button>
-    </form>
+<main>
+    <header>
+        <h1>Go get url! 🏃‍♂️‍➡</h1>
+        <p>This is a simple webpage analyzer. Just pass the url of the webpage you want to get insight about and hit
+            Analyze!</p>
+    </header>
 
-    {{ if .Message }}
-    <p style="color: green;">{{ .Message }}</p>
-    {{ end }}
-    {{ if .Error }}
-    <p style="color: red;">{{ .Error }}</p>
+    <section class="url-form">
+        <form method="POST" action="/analyze" aria-label="URL Analysis Form">
+            <div>
+                <label for="url-input">Enter URL to analyze:</label>
+                <input
+                        id="url-input"
+                        class="url-input"
+                        type="text"
+                        name="url"
+                        placeholder="https://example.com"
+                        required
+                />
+            </div>
+            <button type="submit">Analyze</button>
+        </form>
+    </section>
+
+    {{ if or .Message .Error }}
+    <section class="status-messages">
+        {{ with .Message }}
+        <p class="success-message">{{ . }}</p>
+        {{ end }}
+        {{ with .Error }}
+        <p class="error-message">{{ . }}</p>
+        {{ end }}
+    </section>
     {{ end }}
 
     {{ if .TitleTag }}
-    <h2>Page Title</h2>
-    <p>{{ .TitleTag }}</p>
+    <section class="analysis-section">
+        <h2>Page Title</h2>
+        <p>{{ .TitleTag }}</p>
+    </section>
     {{ end }}
 
     {{ if .Headings }}
-    <h2>Headings Count</h2>
-    <ul>
-        {{ range $level, $count := .Headings }}
-        <li>{{ $level }}: {{ $count }}</li>
-        {{ end }}
-    </ul>
-    <h2>Link Analysis</h2>
-    <ul>
-        <li>Internal Links: {{ .InternalLinks }}</li>
-        <li>External Links: {{ .ExternalLinks }}</li>
-        <li>Broken Links: {{ .BrokenLinks }}</li>
-    </ul>
-    {{ end }}
+    <section class="analysis-section">
+        <h2>Headings Count</h2>
+        <ul>
+            {{ range $level, $count := .Headings }}
+            <li><span class="heading-level">{{ $level }}</span>: {{ $count }}</li>
+            {{ end }}
+        </ul>
 
-    {{ if .Message }}
-    <h2>Login Form Detected</h2>
-    {{ if .HasLoginForm }}
-    <p>Yes</p>
-    {{ else }}
-    <p>No</p>
+        <h2>Link Analysis</h2>
+        <ul>
+            <li>Internal Links: {{ .InternalLinks }}</li>
+            <li>External Links: {{ .ExternalLinks }}</li>
+            <li>Broken Links: {{ .BrokenLinks }}</li>
+        </ul>
+    </section>
+
+    <section class="analysis-section">
+        <h2>Login Form Detection</h2>
+        <p>{{ if .HasLoginForm }}Yes{{ else }}No{{ end }}</p>
+    </section>
     {{ end }}
-    {{ end }}
+</main>
 </body>
 </html>

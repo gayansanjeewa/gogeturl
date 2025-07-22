@@ -22,6 +22,8 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
+	router.Static("/static", "./static")
+
 	router.Use(func(context *gin.Context) {
 		slog.Info("Incoming request", "method", context.Request.Method, "path", context.Request.URL.Path)
 		context.Next()
