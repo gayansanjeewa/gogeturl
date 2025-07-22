@@ -43,8 +43,8 @@ func AnalyzeHandler(context *gin.Context) {
 
 	title := analyzer.ExtractTitle(doc)
 	headings := analyzer.CountHeadings(doc)
-
 	internal, external, broken, err := analyzer.AnalyzeLinks(doc, url)
+
 	if err != nil {
 		slog.Warn("Link analysis failed", "error", err)
 	}

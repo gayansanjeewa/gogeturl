@@ -21,9 +21,9 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
-	router.Use(func(c *gin.Context) {
-		slog.Info("Incoming request", "method", c.Request.Method, "path", c.Request.URL.Path)
-		c.Next()
+	router.Use(func(context *gin.Context) {
+		slog.Info("Incoming request", "method", context.Request.Method, "path", context.Request.URL.Path)
+		context.Next()
 	})
 
 	router.LoadHTMLGlob("./cmd/templates/*")
