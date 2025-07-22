@@ -24,7 +24,7 @@ func main() {
 	router.LoadHTMLGlob("./cmd/templates/*")
 	slog.Info("Starting the server", "port", 8080)
 
-	router.POST("/analyze", handler.AnalyzeHandler)
+	router.POST("/analyze", handler.AnalyzeHandler) // TODO: Fix bug - upon POSTing form navigate to /analyze route
 
 	router.GET("/", func(context *gin.Context) {
 		slog.Info("Rendering index template")
