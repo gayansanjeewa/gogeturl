@@ -47,6 +47,8 @@ func AnalyzeHandler(context *gin.Context) {
 		slog.Warn("Link analysis failed", "error", err)
 	}
 
+	hasLoginForm := analyzer.DetectLoginForm(body)
+
 	context.HTML(http.StatusOK, "index.html", gin.H{
 		"Message":       "Analyzing: " + url,
 		"TitleTag":      title,
@@ -54,5 +56,6 @@ func AnalyzeHandler(context *gin.Context) {
 		"InternalLinks": internal,
 		"ExternalLinks": external,
 		"BrokenLinks":   broken,
+		"HasLoginForm":  hasLoginForm,
 	})
 }
