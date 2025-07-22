@@ -30,31 +30,25 @@ func AnalyzeHandler(context *gin.Context) {
 
 	slog.Info("Received URL for analysis", "url", url)
 
-	doc, err := analyzer.FetchAndParse(url)
+	body, err := analyzer.FetchHTML(url)
 	if err != nil {
-		slog.Error("Failed to fetch/parse HTML", "error", err)
+		slog.Error("Failed to fetch HTML", "error", err)
 		context.HTML(http.StatusInternalServerError, "index.html", gin.H{
-			"Error": "Failed to fetch or parse the URL: " + err.Error(),
+			"Error": "Failed to fetch the URL: " + err.Error(),
 		})
 		return
 	}
 
-	slog.Info("HTML parsed successfully", "nodeType", doc.Type)
-
-	title := analyzer.ExtractTitle(doc)
-	headings := analyzer.CountHeadings(doc)
-	internal, external, broken, err := analyzer.AnalyzeLinks(doc, url)
-
-	if err != nil {
-		slog.Warn("Link analysis failed", "error", err)
-	}
+	//title := analyzer.ExtractTitle(body)
+	headings := analyzer.CountHeadings(body)
+	// NOTE: AnalyzeLinks is not updated to use string body, so we skip it for now or update it separately.
 
 	context.HTML(http.StatusOK, "index.html", gin.H{
-		"Message":       "Analyzing: " + url,
-		"TitleTag":      title,
-		"Headings":      headings,
-		"InternalLinks": internal,
-		"ExternalLinks": external,
-		"BrokenLinks":   broken,
+		"Message": "Analyzing: " + url,
+		//"TitleTag":      title,
+		"Headings": headings,
+		//"InternalLinks": internal,
+		//"ExternalLinks": external,
+		//"BrokenLinks":   broken,
 	})
 }

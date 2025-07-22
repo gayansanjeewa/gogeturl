@@ -5,40 +5,38 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/net/html"
 )
 
-// FetchAndParse fetches the HTML page and parses it into a DOM
-func FetchAndParse(targetURL string) (*html.Node, error) {
+// FetchHTML fetches the HTML content of the page and returns it as a string
+func FetchHTML(targetURL string) (string, error) {
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
 
 	resp, err := client.Get(targetURL)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-
 	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-
-		}
+		_ = Body.Close()
 	}(resp.Body)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, errors.New("received non-2xx status code: " + resp.Status)
+		return "", errors.New("received non-2xx status code: " + resp.Status)
 	}
 
-	doc, err := html.Parse(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.New("failed to parse HTML: " + err.Error())
+		return "", errors.New("failed to read response body: " + err.Error())
 	}
 
-	return doc, nil
+	return string(body), nil
 }
 
 // ExtractTitle returns the content of the <title> tag
@@ -58,23 +56,30 @@ func ExtractTitle(doc *html.Node) string {
 	return title
 }
 
-// CountHeadings returns a map of heading levels and their counts (e.g., h1, h2...)
-func CountHeadings(doc *html.Node) map[string]int {
-	headings := map[string]int{}
-	var traverse func(*html.Node)
-	traverse = func(node *html.Node) {
-		if node.Type == html.ElementNode {
-			switch node.Data {
-			case "h1", "h2", "h3", "h4", "h5", "h6":
-				headings[node.Data]++
+// CountHeadings counts the number of headers in the HTML document, sorted by type.
+// It accepts the body of the HTML document as a string and returns a map of header types to their respective counts.
+func CountHeadings(body string) map[string]int {
+	headers := make(map[string]int)
+	re := regexp.MustCompile(`^h[1-6]$`)
+
+	tokenizer := html.NewTokenizer(strings.NewReader(body))
+	for {
+		tokType := tokenizer.Next()
+
+		if tokType == html.ErrorToken {
+			break // stop at the end of the document
+		}
+
+		if tokType == html.StartTagToken {
+			tok := tokenizer.Token()
+			if re.MatchString(tok.Data) {
+				headerType := strings.ToLower(tok.Data)
+				headers[headerType]++
 			}
 		}
-		for child := node.FirstChild; child != nil; child = child.NextSibling {
-			traverse(child)
-		}
 	}
-	traverse(doc)
-	return headings
+
+	return headers
 }
 
 // AnalyzeLinks counts internal and external links and collects broken links
