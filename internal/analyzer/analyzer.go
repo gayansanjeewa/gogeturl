@@ -44,15 +44,15 @@ func ExtractTitle(body string) string {
 	var title string
 	tokenizer := html.NewTokenizer(strings.NewReader(body))
 	for {
-		tokType := tokenizer.Next()
-		if tokType == html.ErrorToken {
+		tokenType := tokenizer.Next()
+		if tokenType == html.ErrorToken {
 			break
 		}
-		if tokType == html.StartTagToken {
+		if tokenType == html.StartTagToken {
 			token := tokenizer.Token()
 			if token.Data == "title" {
-				tokType = tokenizer.Next()
-				if tokType == html.TextToken {
+				tokenType = tokenizer.Next()
+				if tokenType == html.TextToken {
 					title = tokenizer.Token().Data
 					break
 				}
@@ -66,20 +66,20 @@ func ExtractTitle(body string) string {
 // It accepts the body of the HTML document as a string and returns a map of header types to their respective counts.
 func CountHeadings(body string) map[string]int {
 	headers := make(map[string]int)
-	re := regexp.MustCompile(`^h[1-6]$`)
+	headerRegex := regexp.MustCompile(`^h[1-6]$`)
 
 	tokenizer := html.NewTokenizer(strings.NewReader(body))
 	for {
-		tokType := tokenizer.Next()
+		tokenType := tokenizer.Next()
 
-		if tokType == html.ErrorToken {
+		if tokenType == html.ErrorToken {
 			break // stop at the end of the document
 		}
 
-		if tokType == html.StartTagToken {
-			tok := tokenizer.Token()
-			if re.MatchString(tok.Data) {
-				headerType := strings.ToLower(tok.Data)
+		if tokenType == html.StartTagToken {
+			token := tokenizer.Token()
+			if headerRegex.MatchString(token.Data) {
+				headerType := strings.ToLower(token.Data)
 				headers[headerType]++
 			}
 		}
@@ -96,11 +96,11 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 
 	tokenizer := html.NewTokenizer(strings.NewReader(body))
 	for {
-		tokType := tokenizer.Next()
-		if tokType == html.ErrorToken {
+		tokenType := tokenizer.Next()
+		if tokenType == html.ErrorToken {
 			break
 		}
-		if tokType != html.StartTagToken && tokType != html.SelfClosingTagToken {
+		if tokenType != html.StartTagToken && tokenType != html.SelfClosingTagToken {
 			continue
 		}
 
@@ -143,30 +143,30 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 		return 0, 0, 0, err
 	}
 	client := http.Client{Timeout: 5 * time.Second}
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+	var waitGroup sync.WaitGroup
+	var mutex sync.Mutex
 
 	for _, link := range links {
-		wg.Add(1)
+		waitGroup.Add(1)
 		go func(link string) {
-			defer wg.Done()
+			defer waitGroup.Done()
 			parsed, err := url.Parse(link)
 			if err != nil {
-				mu.Lock()
+				mutex.Lock()
 				broken++
-				mu.Unlock()
+				mutex.Unlock()
 				return
 			}
 
 			// Classify as internal or external
 			if parsed.Host != "" && parsed.Host != parsedBaseURL.Host {
-				mu.Lock()
+				mutex.Lock()
 				external++
-				mu.Unlock()
+				mutex.Unlock()
 			} else {
-				mu.Lock()
+				mutex.Lock()
 				internal++
-				mu.Unlock()
+				mutex.Unlock()
 			}
 
 			// Resolve the absolute URL for checking
@@ -178,13 +178,13 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 
 			resp, err := client.Head(parsed.String())
 			if err != nil || resp.StatusCode >= 400 {
-				mu.Lock()
+				mutex.Lock()
 				broken++
-				mu.Unlock()
+				mutex.Unlock()
 			}
 		}(link)
 	}
-	wg.Wait()
+	waitGroup.Wait()
 
 	return internal, external, broken, nil
 }
