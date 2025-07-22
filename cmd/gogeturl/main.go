@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/gayansanjeewa/gogeturl/internal/handler"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/gayansanjeewa/gogeturl/internal/handler"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +28,7 @@ func main() {
 	})
 
 	router.LoadHTMLGlob("./cmd/templates/*")
-	slog.Info("Starting the server", "port:", defaultPort)
+	slog.Info(fmt.Sprintf("Starting the server at: http://localhost:%d", defaultPort))
 
 	router.POST("/analyze", handler.AnalyzeHandler) // TODO: Fix bug - upon POSTing form navigate to /analyze route
 
