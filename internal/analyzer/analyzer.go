@@ -39,20 +39,26 @@ func FetchHTML(targetURL string) (string, error) {
 	return string(body), nil
 }
 
-// ExtractTitle returns the content of the <title> tag
-func ExtractTitle(doc *html.Node) string {
+// ExtractTitle returns the content of the <title> tag from the HTML body string
+func ExtractTitle(body string) string {
 	var title string
-	var traverse func(*html.Node)
-	traverse = func(node *html.Node) {
-		if node.Type == html.ElementNode && node.Data == "title" && node.FirstChild != nil {
-			title = node.FirstChild.Data
-			return
+	tokenizer := html.NewTokenizer(strings.NewReader(body))
+	for {
+		tokType := tokenizer.Next()
+		if tokType == html.ErrorToken {
+			break
 		}
-		for child := node.FirstChild; child != nil; child = child.NextSibling {
-			traverse(child)
+		if tokType == html.StartTagToken {
+			token := tokenizer.Token()
+			if token.Data == "title" {
+				tokType = tokenizer.Next()
+				if tokType == html.TextToken {
+					title = tokenizer.Token().Data
+					break
+				}
+			}
 		}
 	}
-	traverse(doc)
 	return title
 }
 

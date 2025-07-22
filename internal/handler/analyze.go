@@ -39,13 +39,13 @@ func AnalyzeHandler(context *gin.Context) {
 		return
 	}
 
-	//title := analyzer.ExtractTitle(body)
+	title := analyzer.ExtractTitle(body)
 	headings := analyzer.CountHeadings(body)
 	// NOTE: AnalyzeLinks is not updated to use string body, so we skip it for now or update it separately.
 
 	context.HTML(http.StatusOK, "index.html", gin.H{
-		"Message": "Analyzing: " + url,
-		//"TitleTag":      title,
+		"Message":  "Analyzing: " + url,
+		"TitleTag": title,
 		"Headings": headings,
 		//"InternalLinks": internal,
 		//"ExternalLinks": external,
