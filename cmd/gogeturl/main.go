@@ -1,12 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gayansanjeewa/gogeturl/internal/handler"
 	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	defaultPort = 8080 // TODO: get from environment variables
 )
 
 func main() {
@@ -22,7 +27,7 @@ func main() {
 	})
 
 	router.LoadHTMLGlob("./cmd/templates/*")
-	slog.Info("Starting the server", "port", 8080)
+	slog.Info("Starting the server", "port:", defaultPort)
 
 	router.POST("/analyze", handler.AnalyzeHandler) // TODO: Fix bug - upon POSTing form navigate to /analyze route
 
@@ -31,7 +36,7 @@ func main() {
 		context.HTML(http.StatusOK, "index.html", nil)
 	})
 
-	if err := router.Run(":8080"); err != nil {
+	if err := router.Run(fmt.Sprintf(":%d", defaultPort)); err != nil {
 		slog.Error("Failed to start server", "error", err)
 		os.Exit(1)
 	}
