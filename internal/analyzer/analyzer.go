@@ -18,22 +18,36 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// Client is the default HTTP client used by the analyzer package.
-// It can be replaced with a mock client in unit tests.
-var Client HTTPClient = &http.Client{
-	Timeout: 10 * time.Second,
+type Analyzer interface {
+	FetchHTML(targetURL string) (string, error)
+	ExtractTitle(body string) string
+	CountHeadings(body string) map[string]int
+	AnalyzeLinks(body, baseURL string) (internal, external, broken int, err error)
+	DetectLoginForm(body string) bool
+	DetectHTMLVersion(body string) string
+}
+
+type DefaultAnalyzer struct {
+	Client HTTPClient
+}
+
+func NewAnalyzer(client HTTPClient) Analyzer {
+	if client == nil {
+		client = &http.Client{Timeout: 10 * time.Second}
+	}
+	return &DefaultAnalyzer{Client: client}
 }
 
 const maxWorkers = 10
 
 // FetchHTML fetches the HTML content of the page and returns it as a string.
-func FetchHTML(targetURL string) (string, error) {
+func (a *DefaultAnalyzer) FetchHTML(targetURL string) (string, error) {
 	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := Client.Do(req)
+	resp, err := a.Client.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +68,7 @@ func FetchHTML(targetURL string) (string, error) {
 }
 
 // ExtractTitle returns the content of the <title> tag from the HTML body string
-func ExtractTitle(body string) string {
+func (a *DefaultAnalyzer) ExtractTitle(body string) string {
 	var title string
 	tokenizer := html.NewTokenizer(strings.NewReader(body))
 	for {
@@ -78,7 +92,7 @@ func ExtractTitle(body string) string {
 
 // CountHeadings counts the number of headers in the HTML document, sorted by type.
 // It accepts the body of the HTML document as a string and returns a map of header types to their respective counts.
-func CountHeadings(body string) map[string]int {
+func (a *DefaultAnalyzer) CountHeadings(body string) map[string]int {
 	headers := make(map[string]int)
 	headerRegex := regexp.MustCompile(`^h[1-6]$`)
 
@@ -104,7 +118,7 @@ func CountHeadings(body string) map[string]int {
 
 // AnalyzeLinks parses links from the HTML body, resolving relative URLs and handling base tags,
 // and counts internal, external, and broken links. It skips mailto:, tel:, and javascript: schemes.
-func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err error) {
+func (a *DefaultAnalyzer) AnalyzeLinks(body, baseURL string) (internal, external, broken int, err error) {
 	var baseParsed *url.URL
 	var links []string
 
@@ -148,7 +162,7 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 		go func() {
 			defer waitGroup.Done()
 			for link := range jobs {
-				isInternal, isBroken := checkLinkAccessibility(link, parsedBaseURL, Client)
+				isInternal, isBroken := a.checkLinkAccessibility(link, parsedBaseURL)
 				results <- linkResult{isInternal, isBroken}
 			}
 		}()
@@ -217,7 +231,7 @@ func extractBaseHref(token html.Token) *url.URL {
 }
 
 // checkLinkAccessibility sends a HEAD request (or fallback GET) and returns whether the link is internal and if it is broken.
-func checkLinkAccessibility(link string, base *url.URL, client HTTPClient) (bool, bool) {
+func (a *DefaultAnalyzer) checkLinkAccessibility(link string, base *url.URL) (bool, bool) {
 	parsed, err := url.Parse(link)
 	if err != nil {
 		return false, true
@@ -227,13 +241,13 @@ func checkLinkAccessibility(link string, base *url.URL, client HTTPClient) (bool
 
 	// Try HEAD request
 	req, _ := http.NewRequest("HEAD", parsed.String(), nil)
-	resp, err := client.Do(req)
+	resp, err := a.Client.Do(req)
 	isBroken := err != nil || resp.StatusCode >= 400
 
 	// Fallback to GET if HEAD not allowed
 	if !isBroken && resp.StatusCode == http.StatusMethodNotAllowed {
 		req, _ = http.NewRequest("GET", parsed.String(), nil)
-		resp, err = client.Do(req)
+		resp, err = a.Client.Do(req)
 		isBroken = err != nil || resp.StatusCode >= 400
 	}
 
@@ -242,7 +256,7 @@ func checkLinkAccessibility(link string, base *url.URL, client HTTPClient) (bool
 
 // DetectLoginForm checks if the HTML body contains a form with an input of a type "password"
 // or any attribute matches the word "login"
-func DetectLoginForm(body string) bool {
+func (a *DefaultAnalyzer) DetectLoginForm(body string) bool {
 	tokenizer := html.NewTokenizer(strings.NewReader(body))
 	for {
 		tokenType := tokenizer.Next()
@@ -282,7 +296,7 @@ func getAttributeValue(tag html.Token, key string) string {
 }
 
 // DetectHTMLVersion determines the HTML version by matching known DOCTYPE declarations in the HTML body.
-func DetectHTMLVersion(body string) string {
+func (a *DefaultAnalyzer) DetectHTMLVersion(body string) string {
 	htmlDeclarations := map[string]string{
 		"HTML 5":                 "<!DOCTYPE html>",
 		"HTML 4.01 Strict":       "-//W3C//DTD HTML 4.01//EN",
