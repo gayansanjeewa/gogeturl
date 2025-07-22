@@ -38,7 +38,10 @@
         <p class="success-message">{{ . }}</p>
         {{ end }}
         {{ with .Error }}
-        <p class="error-message">{{ . }}</p>
+        <div class="error-message">
+            <strong>Oops! Something went wrong:</strong><br>
+            {{ . }}
+        </div>
         {{ end }}
     </section>
     {{ end }}

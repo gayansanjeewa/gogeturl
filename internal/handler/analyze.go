@@ -33,8 +33,8 @@ func AnalyzeHandler(context *gin.Context) {
 	body, err := analyzer.FetchHTML(url)
 	if err != nil {
 		slog.Error("Failed to fetch HTML", "error", err)
-		context.HTML(http.StatusInternalServerError, "index.html", gin.H{
-			"Error": "Failed to fetch the URL: " + err.Error(),
+		context.HTML(http.StatusOK, "index.html", gin.H{
+			"Error": "Unable to fetch the provided URL. Reason: " + err.Error(),
 		})
 		return
 	}
