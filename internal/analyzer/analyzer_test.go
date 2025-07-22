@@ -16,7 +16,7 @@ func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 func TestFetchHTML(t *testing.T) {
-	mockHTML := "<html><head><title>Test Page</title></head><body>Hello</body></html>"
+	mockHTML := "<html><head><title>Welcome!</title></head><body>Hello</body></html>"
 
 	mockClient := &mockHTTPClient{
 		DoFunc: func(req *http.Request) (*http.Response, error) {
@@ -27,14 +27,25 @@ func TestFetchHTML(t *testing.T) {
 		},
 	}
 
-	an := NewAnalyzer(mockClient)
+	newAnalyzer := NewAnalyzer(mockClient)
+	body, err := newAnalyzer.FetchHTML("http://example.com")
 
-	body, err := an.FetchHTML("http://example.com")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
-	if !strings.Contains(body, "Test Page") {
+	if !strings.Contains(body, "Welcome") {
 		t.Errorf("Expected body to contain title, got: %s", body)
+	}
+}
+
+func TestExtractTitle(t *testing.T) {
+	mockHTML := "<html><head><title>Welcome!</title></head><body>Hello</body></html>"
+
+	newAnalyzer := NewAnalyzer(nil)
+	title := newAnalyzer.ExtractTitle(mockHTML)
+
+	if title != "Welcome!" {
+		t.Errorf("Expected title 'Welcome!', got '%s'", title)
 	}
 }
