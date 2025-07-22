@@ -13,15 +13,27 @@ import (
 	"golang.org/x/net/html"
 )
 
+// HTTPClient is an interface to allow mocking HTTP requests in tests.
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+// Client is the default HTTP client used by the analyzer package.
+// It can be replaced with a mock client in unit tests.
+var Client HTTPClient = &http.Client{
+	Timeout: 10 * time.Second,
+}
+
 const maxWorkers = 10
 
-// FetchHTML fetches the HTML content of the page and returns it as a string
+// FetchHTML fetches the HTML content of the page and returns it as a string.
 func FetchHTML(targetURL string) (string, error) {
-	client := http.Client{
-		Timeout: 10 * time.Second,
+	req, err := http.NewRequest("GET", targetURL, nil)
+	if err != nil {
+		return "", err
 	}
 
-	resp, err := client.Get(targetURL)
+	resp, err := Client.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -128,7 +140,6 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 	// Use buffered channels for jobs and results
 	jobs := make(chan string, len(links))
 	results := make(chan linkResult, len(links))
-	client := http.Client{Timeout: 5 * time.Second}
 
 	// Spawn worker goroutines to check link accessibility
 	var waitGroup sync.WaitGroup
@@ -137,7 +148,7 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 		go func() {
 			defer waitGroup.Done()
 			for link := range jobs {
-				isInternal, isBroken := checkLinkAccessibility(link, parsedBaseURL, &client)
+				isInternal, isBroken := checkLinkAccessibility(link, parsedBaseURL, Client)
 				results <- linkResult{isInternal, isBroken}
 			}
 		}()
@@ -206,7 +217,7 @@ func extractBaseHref(token html.Token) *url.URL {
 }
 
 // checkLinkAccessibility sends a HEAD request (or fallback GET) and returns whether the link is internal and if it is broken.
-func checkLinkAccessibility(link string, base *url.URL, client *http.Client) (bool, bool) {
+func checkLinkAccessibility(link string, base *url.URL, client HTTPClient) (bool, bool) {
 	parsed, err := url.Parse(link)
 	if err != nil {
 		return false, true
