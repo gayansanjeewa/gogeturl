@@ -88,69 +88,103 @@ func CountHeadings(body string) map[string]int {
 	return headers
 }
 
-// AnalyzeLinks counts internal and external links and collects broken links
-func AnalyzeLinks(doc *html.Node, baseURL string) (internal, external, broken int, err error) {
+// AnalyzeLinks parses links from the HTML body, resolving relative URLs and handling base tags,
+// and counts internal, external, and broken links. It skips mailto:, tel:, and javascript: schemes.
+func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err error) {
+	var baseParsed *url.URL
 	var links []string
-	var traverse func(*html.Node)
-	traverse = func(node *html.Node) {
-		if node.Type == html.ElementNode && node.Data == "a" {
-			for _, attribute := range node.Attr {
-				if attribute.Key == "href" && attribute.Val != "" {
-					links = append(links, attribute.Val)
+
+	tokenizer := html.NewTokenizer(strings.NewReader(body))
+	for {
+		tokType := tokenizer.Next()
+		if tokType == html.ErrorToken {
+			break
+		}
+		if tokType != html.StartTagToken && tokType != html.SelfClosingTagToken {
+			continue
+		}
+
+		token := tokenizer.Token()
+		switch token.Data {
+		case "base":
+			for _, attr := range token.Attr {
+				if attr.Key == "href" {
+					parsedBaseURL, err := url.Parse(attr.Val)
+					if err == nil {
+						baseParsed = parsedBaseURL
+					}
 				}
 			}
-		}
-		for child := node.FirstChild; child != nil; child = child.NextSibling {
-			traverse(child)
+		case "a", "link":
+			for _, attr := range token.Attr {
+				if attr.Key != "href" {
+					continue
+				}
+				link := attr.Val
+				parsedLink, err := url.Parse(link)
+				if err != nil {
+					continue
+				}
+				// Skip mailto, tel, javascript schemes
+				if parsedLink.Scheme == "mailto" || parsedLink.Scheme == "tel" || parsedLink.Scheme == "javascript" {
+					continue
+				}
+				// Resolve relative URLs with base if present
+				if baseParsed != nil && !parsedLink.IsAbs() {
+					link = baseParsed.ResolveReference(parsedLink).String()
+				}
+				links = append(links, link)
+			}
 		}
 	}
-	traverse(doc)
 
-	baseParsed, err := url.Parse(baseURL)
+	parsedBaseURL, err := url.Parse(baseURL)
 	if err != nil {
 		return 0, 0, 0, err
 	}
-
 	client := http.Client{Timeout: 5 * time.Second}
-	var waitGroup sync.WaitGroup
-	var mutex sync.Mutex
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 
 	for _, link := range links {
-		waitGroup.Add(1)
+		wg.Add(1)
 		go func(link string) {
-			defer waitGroup.Done()
+			defer wg.Done()
 			parsed, err := url.Parse(link)
 			if err != nil {
-				mutex.Lock()
+				mu.Lock()
 				broken++
-				mutex.Unlock()
+				mu.Unlock()
 				return
 			}
-			isExternal := parsed.Host != "" && parsed.Host != baseParsed.Host
-			if isExternal {
-				mutex.Lock()
+
+			// Classify as internal or external
+			if parsed.Host != "" && parsed.Host != parsedBaseURL.Host {
+				mu.Lock()
 				external++
-				mutex.Unlock()
+				mu.Unlock()
 			} else {
-				mutex.Lock()
+				mu.Lock()
 				internal++
-				mutex.Unlock()
+				mu.Unlock()
 			}
 
-			// Check if link is accessible
-			reqURL := parsed
-			if !parsed.IsAbs() {
-				reqURL = baseParsed.ResolveReference(parsed)
+			// Resolve the absolute URL for checking
+			if !parsed.IsAbs() && baseParsed != nil {
+				parsed = baseParsed.ResolveReference(parsed)
+			} else if !parsed.IsAbs() {
+				parsed = parsedBaseURL.ResolveReference(parsed)
 			}
-			resp, err := client.Head(reqURL.String())
+
+			resp, err := client.Head(parsed.String())
 			if err != nil || resp.StatusCode >= 400 {
-				mutex.Lock()
+				mu.Lock()
 				broken++
-				mutex.Unlock()
+				mu.Unlock()
 			}
 		}(link)
 	}
-	waitGroup.Wait()
+	wg.Wait()
 
 	return internal, external, broken, nil
 }

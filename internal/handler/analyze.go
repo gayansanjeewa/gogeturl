@@ -41,14 +41,18 @@ func AnalyzeHandler(context *gin.Context) {
 
 	title := analyzer.ExtractTitle(body)
 	headings := analyzer.CountHeadings(body)
-	// NOTE: AnalyzeLinks is not updated to use string body, so we skip it for now or update it separately.
+	internal, external, broken, err := analyzer.AnalyzeLinks(body, url)
+
+	if err != nil {
+		slog.Warn("Link analysis failed", "error", err)
+	}
 
 	context.HTML(http.StatusOK, "index.html", gin.H{
-		"Message":  "Analyzing: " + url,
-		"TitleTag": title,
-		"Headings": headings,
-		//"InternalLinks": internal,
-		//"ExternalLinks": external,
-		//"BrokenLinks":   broken,
+		"Message":       "Analyzing: " + url,
+		"TitleTag":      title,
+		"Headings":      headings,
+		"InternalLinks": internal,
+		"ExternalLinks": external,
+		"BrokenLinks":   broken,
 	})
 }
