@@ -1,14 +1,11 @@
 package handler
 
 import (
-	"github.com/gayansanjeewa/gogeturl/internal/analyzer"
-	"github.com/gayansanjeewa/gogeturl/internal/utils"
-)
-
-import (
 	"log/slog"
 	"net/http"
 
+	"github.com/gayansanjeewa/gogeturl/internal/analyzer"
+	"github.com/gayansanjeewa/gogeturl/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,7 +39,6 @@ func AnalyzeHandler(context *gin.Context) {
 		return
 	}
 
-	// TEMP: confirm parse succeeded
 	slog.Info("HTML parsed successfully", "nodeType", doc.Type)
 
 	title := analyzer.ExtractTitle(doc)
