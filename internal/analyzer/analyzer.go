@@ -194,11 +194,11 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 func DetectLoginForm(body string) bool {
 	tokenizer := html.NewTokenizer(strings.NewReader(body))
 	for {
-		tokType := tokenizer.Next()
-		if tokType == html.ErrorToken {
+		tokenType := tokenizer.Next()
+		if tokenType == html.ErrorToken {
 			break
 		}
-		if tokType != html.StartTagToken && tokType != html.SelfClosingTagToken {
+		if tokenType != html.StartTagToken && tokenType != html.SelfClosingTagToken {
 			continue
 		}
 		token := tokenizer.Token()
