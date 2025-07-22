@@ -13,6 +13,8 @@ import (
 	"golang.org/x/net/html"
 )
 
+const maxWorkers = 10
+
 // FetchHTML fetches the HTML content of the page and returns it as a string
 func FetchHTML(targetURL string) (string, error) {
 	client := http.Client{
@@ -107,34 +109,9 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 		token := tokenizer.Token()
 		switch token.Data {
 		case "base":
-			for _, attr := range token.Attr {
-				if attr.Key == "href" {
-					parsedBaseURL, err := url.Parse(attr.Val)
-					if err == nil {
-						baseParsed = parsedBaseURL
-					}
-				}
-			}
+			baseParsed = extractBaseHref(token)
 		case "a", "link":
-			for _, attr := range token.Attr {
-				if attr.Key != "href" {
-					continue
-				}
-				link := attr.Val
-				parsedLink, err := url.Parse(link)
-				if err != nil {
-					continue
-				}
-				// Skip mailto, tel, javascript schemes
-				if parsedLink.Scheme == "mailto" || parsedLink.Scheme == "tel" || parsedLink.Scheme == "javascript" {
-					continue
-				}
-				// Resolve relative URLs with base if present
-				if baseParsed != nil && !parsedLink.IsAbs() {
-					link = baseParsed.ResolveReference(parsedLink).String()
-				}
-				links = append(links, link)
-			}
+			links = extractLinks(token, baseParsed, links)
 		}
 	}
 
@@ -142,51 +119,114 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 	if err != nil {
 		return 0, 0, 0, err
 	}
-	client := http.Client{Timeout: 5 * time.Second}
-	var waitGroup sync.WaitGroup
-	var mutex sync.Mutex
 
-	for _, link := range links {
-		waitGroup.Add(1)
-		go func(link string) {
-			defer waitGroup.Done()
-			parsed, err := url.Parse(link)
-			if err != nil {
-				mutex.Lock()
-				broken++
-				mutex.Unlock()
-				return
-			}
-
-			// Classify as internal or external
-			if parsed.Host != "" && parsed.Host != parsedBaseURL.Host {
-				mutex.Lock()
-				external++
-				mutex.Unlock()
-			} else {
-				mutex.Lock()
-				internal++
-				mutex.Unlock()
-			}
-
-			// Resolve the absolute URL for checking
-			if !parsed.IsAbs() && baseParsed != nil {
-				parsed = baseParsed.ResolveReference(parsed)
-			} else if !parsed.IsAbs() {
-				parsed = parsedBaseURL.ResolveReference(parsed)
-			}
-
-			resp, err := client.Head(parsed.String())
-			if err != nil || resp.StatusCode >= 400 {
-				mutex.Lock()
-				broken++
-				mutex.Unlock()
-			}
-		}(link)
+	type linkResult struct {
+		isInternal bool
+		isBroken   bool
 	}
+
+	// Use buffered channels for jobs and results
+	jobs := make(chan string, len(links))
+	results := make(chan linkResult, len(links))
+	client := http.Client{Timeout: 5 * time.Second}
+
+	// Spawn worker goroutines to check link accessibility
+	var waitGroup sync.WaitGroup
+	for i := 0; i < maxWorkers; i++ {
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			for link := range jobs {
+				isInternal, isBroken := checkLinkAccessibility(link, parsedBaseURL, &client)
+				results <- linkResult{isInternal, isBroken}
+			}
+		}()
+	}
+
+	// Feed links to workers
+	for _, link := range links {
+		jobs <- link
+	}
+	close(jobs)
+
 	waitGroup.Wait()
+	close(results)
+
+	// Aggregate results
+	for res := range results {
+		if res.isInternal {
+			internal++
+		} else {
+			external++
+		}
+		if res.isBroken {
+			broken++
+		}
+	}
 
 	return internal, external, broken, nil
+}
+
+func extractLinks(token html.Token, baseParsed *url.URL, links []string) []string {
+	for _, attr := range token.Attr {
+		if attr.Key != "href" {
+			continue
+		}
+
+		link := attr.Val
+		parsed, err := url.Parse(link)
+
+		if err != nil {
+			return links
+		}
+
+		if parsed.Scheme == "mailto" || parsed.Scheme == "tel" || parsed.Scheme == "javascript" {
+			return links
+		}
+
+		if baseParsed != nil && !parsed.IsAbs() {
+			link = baseParsed.ResolveReference(parsed).String()
+		}
+
+		links = append(links, link)
+	}
+	return links
+}
+
+// extractBaseHref parses a <base> tag and returns the resolved *url.URL if present.
+func extractBaseHref(token html.Token) *url.URL {
+	for _, attr := range token.Attr {
+		if attr.Key == "href" {
+			if parsed, err := url.Parse(attr.Val); err == nil {
+				return parsed
+			}
+		}
+	}
+	return nil
+}
+
+// checkLinkAccessibility sends a HEAD request (or fallback GET) and returns whether the link is internal and if it is broken.
+func checkLinkAccessibility(link string, base *url.URL, client *http.Client) (bool, bool) {
+	parsed, err := url.Parse(link)
+	if err != nil {
+		return false, true
+	}
+
+	isInternal := parsed.Host == "" || parsed.Host == base.Host
+
+	// Try HEAD request
+	req, _ := http.NewRequest("HEAD", parsed.String(), nil)
+	resp, err := client.Do(req)
+	isBroken := err != nil || resp.StatusCode >= 400
+
+	// Fallback to GET if HEAD not allowed
+	if !isBroken && resp.StatusCode == http.StatusMethodNotAllowed {
+		req, _ = http.NewRequest("GET", parsed.String(), nil)
+		resp, err = client.Do(req)
+		isBroken = err != nil || resp.StatusCode >= 400
+	}
+
+	return isInternal, isBroken
 }
 
 // DetectLoginForm checks if the HTML body contains a form with an input of a type "password"
