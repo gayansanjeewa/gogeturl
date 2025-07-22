@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/gayansanjeewa/gogeturl/internal/handler"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/gayansanjeewa/gogeturl/internal/handler"
 
 	"github.com/gin-gonic/gin"
 )
