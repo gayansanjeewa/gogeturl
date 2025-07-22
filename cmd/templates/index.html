@@ -39,5 +39,14 @@
         <li>Broken Links: {{ .BrokenLinks }}</li>
     </ul>
     {{ end }}
+
+    {{ if .Message }}
+    <h2>Login Form Detected</h2>
+    {{ if .HasLoginForm }}
+    <p>Yes</p>
+    {{ else }}
+    <p>No</p>
+    {{ end }}
+    {{ end }}
 </body>
 </html>

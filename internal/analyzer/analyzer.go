@@ -188,3 +188,44 @@ func AnalyzeLinks(body, baseURL string) (internal, external, broken int, err err
 
 	return internal, external, broken, nil
 }
+
+// DetectLoginForm checks if the HTML body contains a form with an input of a type "password"
+// or any attribute matches the word "login"
+func DetectLoginForm(body string) bool {
+	tokenizer := html.NewTokenizer(strings.NewReader(body))
+	for {
+		tokenType := tokenizer.Next()
+		if tokenType == html.ErrorToken {
+			break
+		}
+		if tokenType != html.StartTagToken && tokenType != html.SelfClosingTagToken {
+			continue
+		}
+		token := tokenizer.Token()
+		switch token.Data {
+		case "input":
+			inputType := strings.ToLower(getAttributeValue(token, "type"))
+			if inputType == "password" {
+				return true
+			}
+		case "form":
+			action := strings.ToLower(getAttributeValue(token, "action"))
+			class := strings.ToLower(getAttributeValue(token, "class"))
+			if strings.Contains(action, "login") || strings.Contains(class, "login") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// getAttributeValue retrieves the value of a given attribute key from an HTML token.
+// If the attribute does not exist, it returns an empty string.
+func getAttributeValue(tag html.Token, key string) string {
+	for _, attr := range tag.Attr {
+		if attr.Key == key {
+			return attr.Val
+		}
+	}
+	return ""
+}
