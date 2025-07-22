@@ -39,6 +39,7 @@ func AnalyzeHandler(context *gin.Context) {
 		return
 	}
 
+	htmlVersion := analyzer.DetectHTMLVersion(body)
 	title := analyzer.ExtractTitle(body)
 	headings := analyzer.CountHeadings(body)
 	internal, external, broken, err := analyzer.AnalyzeLinks(body, url)
@@ -51,6 +52,7 @@ func AnalyzeHandler(context *gin.Context) {
 
 	context.HTML(http.StatusOK, "index.html", gin.H{
 		"Message":       "Analyzing: " + url,
+		"HTMLVersion":   htmlVersion,
 		"TitleTag":      title,
 		"Headings":      headings,
 		"InternalLinks": internal,

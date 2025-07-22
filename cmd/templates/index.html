@@ -50,6 +50,13 @@
     </section>
     {{ end }}
 
+    {{ if .HTMLVersion }}
+    <section class="analysis-section">
+        <h2>HTML Version</h2>
+        <p>{{ .HTMLVersion }}</p>
+    </section>
+    {{ end }}
+
     {{ if .Headings }}
     <section class="analysis-section">
         <h2>Headings Count</h2>
