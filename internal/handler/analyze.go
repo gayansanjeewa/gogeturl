@@ -30,7 +30,9 @@ func AnalyzeHandler(context *gin.Context) {
 
 	slog.Info("Received URL for analysis", "url", url)
 
-	body, err := analyzer.FetchHTML(url)
+	newAnalyzer := analyzer.NewAnalyzer(nil)
+	body, err := newAnalyzer.FetchHTML(url)
+
 	if err != nil {
 		slog.Error("Failed to fetch HTML", "error", err)
 		context.HTML(http.StatusOK, "index.html", gin.H{
@@ -39,16 +41,15 @@ func AnalyzeHandler(context *gin.Context) {
 		return
 	}
 
-	htmlVersion := analyzer.DetectHTMLVersion(body)
-	title := analyzer.ExtractTitle(body)
-	headings := analyzer.CountHeadings(body)
-	internal, external, broken, err := analyzer.AnalyzeLinks(body, url)
+	htmlVersion := newAnalyzer.DetectHTMLVersion(body)
+	title := newAnalyzer.ExtractTitle(body)
+	headings := newAnalyzer.CountHeadings(body)
+	hasLoginForm := newAnalyzer.DetectLoginForm(body)
 
+	internal, external, broken, err := newAnalyzer.AnalyzeLinks(body, url)
 	if err != nil {
 		slog.Warn("Link analysis failed", "error", err)
 	}
-
-	hasLoginForm := analyzer.DetectLoginForm(body)
 
 	context.HTML(http.StatusOK, "index.html", gin.H{
 		"Message":       "Analyzing: " + url,
