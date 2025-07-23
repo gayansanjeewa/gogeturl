@@ -11,6 +11,41 @@ type mockHTTPClient struct {
 	DoFunc func(req *http.Request) (*http.Response, error)
 }
 
+func TestDetectLoginForm(t *testing.T) {
+	tests := []struct {
+		name     string
+		html     string
+		expected bool
+	}{
+		{
+			name:     "Contains login form with password input",
+			html:     `<form><input type="text" name="username"><input type="password" name="pass"></form>`,
+			expected: true,
+		},
+		{
+			name:     "Contains only password field",
+			html:     `<div><input type="password"></div>`,
+			expected: true,
+		},
+		{
+			name:     "Contains form but no password field",
+			html:     `<form><input type="text" name="email"></form>`,
+			expected: false,
+		},
+	}
+
+	newAnalyzer := NewAnalyzer(nil)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := newAnalyzer.DetectLoginForm(tt.html)
+			if result != tt.expected {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
 func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return m.DoFunc(req)
 }
