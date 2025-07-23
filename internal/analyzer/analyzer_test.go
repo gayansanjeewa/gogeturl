@@ -11,6 +11,10 @@ type mockHTTPClient struct {
 	DoFunc func(req *http.Request) (*http.Response, error)
 }
 
+func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	return m.DoFunc(req)
+}
+
 func TestDetectLoginForm(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -34,20 +38,16 @@ func TestDetectLoginForm(t *testing.T) {
 		},
 	}
 
-	newAnalyzer := NewAnalyzer(nil)
+	analyzer := NewAnalyzer(nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := newAnalyzer.DetectLoginForm(tt.html)
+			result := analyzer.DetectLoginForm(tt.html)
 			if result != tt.expected {
 				t.Errorf("Expected %v, got %v", tt.expected, result)
 			}
 		})
 	}
-}
-
-func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	return m.DoFunc(req)
 }
 
 func TestFetchHTML(t *testing.T) {
@@ -62,8 +62,8 @@ func TestFetchHTML(t *testing.T) {
 		},
 	}
 
-	newAnalyzer := NewAnalyzer(mockClient)
-	body, err := newAnalyzer.FetchHTML("http://example.com")
+	analyzer := NewAnalyzer(mockClient)
+	body, err := analyzer.FetchHTML("http://example.com")
 
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
@@ -77,8 +77,8 @@ func TestFetchHTML(t *testing.T) {
 func TestExtractTitle(t *testing.T) {
 	mockHTML := "<html><head><title>Welcome!</title></head><body>Hello</body></html>"
 
-	newAnalyzer := NewAnalyzer(nil)
-	title := newAnalyzer.ExtractTitle(mockHTML)
+	analyzer := NewAnalyzer(nil)
+	title := analyzer.ExtractTitle(mockHTML)
 
 	if title != "Welcome!" {
 		t.Errorf("Expected title 'Welcome!', got '%s'", title)
@@ -96,8 +96,8 @@ func TestCountHeadings(t *testing.T) {
 			</body>
 		</html>`
 
-	newAnalyzer := NewAnalyzer(nil)
-	headings := newAnalyzer.CountHeadings(mockHTML)
+	analyzer := NewAnalyzer(nil)
+	headings := analyzer.CountHeadings(mockHTML)
 
 	expected := map[string]int{
 		"h1": 1,
@@ -142,8 +142,8 @@ func TestAnalyzeLinks(t *testing.T) {
 		},
 	}
 
-	newAnalyzer := NewAnalyzer(mockClient)
-	intCount, extCount, brokenCount, err := newAnalyzer.AnalyzeLinks(mockHTML, "http://localhost")
+	analyzer := NewAnalyzer(mockClient)
+	intCount, extCount, brokenCount, err := analyzer.AnalyzeLinks(mockHTML, "http://localhost")
 
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
