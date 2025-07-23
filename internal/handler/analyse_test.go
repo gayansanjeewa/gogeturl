@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// mockAnalyzer implements the Analyzer interface with stubbed values
 type mockAnalyzer struct{}
 
 func (m *mockAnalyzer) FetchHTML(url string) (string, error) {
