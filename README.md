@@ -15,16 +15,28 @@ GoGetURL is a web application built with Go and Gin for analyzing HTML web pages
 - Hot-reloading with Air for development
 - TODO: Dockerized for easy deployment
 
-## Technologies Used
+## Technical Overview & Engineering Practices
 
-- Go (Golang)
-- Gin web framework
-- HTML tokenizer (`golang.org/x/net/html`)
-- `slog` for structured logging
-- `air` for live reload
-- `stretchr/testify` for test assertions
-- Standard Go testing
+This project uses standard Go practices to keep the code clean, easy to follow, and practical for real-world use.
+### Stack & Tools
 
+- **Go (Golang)**: The core programming language used.
+- **Gin**: Lightweight HTTP web framework.
+- **HTML Tokenizer**: `golang.org/x/net/html` for parsing HTML content.
+- **slog**: Used for structured logging without manually formatting log output.
+- **air**: Provides hot-reloading during development.
+- **stretchr/testify**: Enables expressive and readable test assertions.
+- **Standard Testing Tools**: Leveraged for unit and integration testing.
+- **Go Modules**: For dependency management.
+
+### Engineering Highlights
+
+- **URL Validation**: Handled using Go’s standard `net/url` and `regexp` packages.
+- **Logging**: Structured and leveled logging with `slog`, adhering to modern practices.
+- **Concurrency**: Applied appropriately with goroutines and `sync.WaitGroup`—especially for broken link checking.
+- **Error Handling**: Proper HTTP status codes and user-friendly messages are returned for all failure cases.
+- **No JavaScript**: The UI avoids JS for simplicity and backend focus, using Go templates for rendering.
+- **Testing Strategy**: Over 70% coverage with both unit and integration tests, testing user input flows and analyzer logic.
 
 ## Instructions
 
