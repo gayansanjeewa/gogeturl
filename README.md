@@ -109,7 +109,7 @@ This project includes a `Makefile` to simplify development and deployment workfl
   make clean        Remove the built binary
   make docker-build Build Docker image
   make docker-run   Run Docker container
-  make lint         Run linters (if configured)
+  make lint         Run linters
 ```
 
 You can explore the `Makefile` for more supported targets.
