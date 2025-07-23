@@ -161,3 +161,38 @@ func TestAnalyzeLinks(t *testing.T) {
 		t.Errorf("Expected 0 broken links, got %d", brokenCount)
 	}
 }
+
+func TestDetectHTMLVersion(t *testing.T) {
+	tests := []struct {
+		name     string
+		html     string
+		expected string
+	}{
+		{
+			name:     "HTML5 doctype",
+			html:     `<!DOCTYPE html><html><head></head><body></body></html>`,
+			expected: "HTML 5",
+		},
+		{
+			name:     "HTML 4.01 Transitional doctype",
+			html:     `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head></head><body></body></html>`,
+			expected: "HTML 4.01 Transitional",
+		},
+		{
+			name:     "Unknown doctype",
+			html:     `<html><head></head><body></body></html>`,
+			expected: "Unknown",
+		},
+	}
+
+	analyzer := NewAnalyzer(nil)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			version := analyzer.DetectHTMLVersion(tt.html)
+			if version != tt.expected {
+				t.Errorf("Expected version %s, got %s", tt.expected, version)
+			}
+		})
+	}
+}
