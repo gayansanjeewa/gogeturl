@@ -39,7 +39,7 @@ docker-run:
 # Run linter if you use one like golangci-lint
 .PHONY: lint
 lint:
-	golangci-lint run
+	golangci-lint run --timeout=2m --out-format=colored-line-number
 
 # Help
 .PHONY: help
@@ -51,4 +51,4 @@ help:
 	@echo "  make clean        Remove the built binary"
 	@echo "  make docker-build Build Docker image"
 	@echo "  make docker-run   Run Docker container"
-	@echo "  make lint         Run linters (if configured)"
+	@echo "  make lint         Run linters"
