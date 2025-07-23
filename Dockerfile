@@ -13,7 +13,7 @@ RUN go mod download
 
 # Build the application
 COPY . ./
-RUN go build -o gogeturl ./cmd/gogeturl
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o gogeturl ./cmd/gogeturl
 
 # Final stage
 FROM alpine:3.19
@@ -28,7 +28,7 @@ WORKDIR ${APP_DIR}
 
 # Copy only necessary files
 COPY --from=builder /app/gogeturl .
-COPY --chown=${APP_USER}:${APP_USER} "cmd/templates" ./templates
+COPY --chown=${APP_USER}:${APP_USER} cmd/templates ./cmd/templates
 COPY --chown=${APP_USER}:${APP_USER} static ./static
 
 # Set environment variables
