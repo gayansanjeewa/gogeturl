@@ -111,3 +111,53 @@ func TestCountHeadings(t *testing.T) {
 		}
 	}
 }
+
+func TestAnalyzeLinks(t *testing.T) {
+	// HTML structure:
+	// <link href="/style.css" />                             --> internal
+	// <link href="https://external.com/theme.css" />         --> external
+	// <a href="/about">About</a>                             --> internal
+	// <a href="https://external.com/page">External Page</a>  --> external
+	// <a href="mailto:someone@example.com">Email</a>         --> should be skipped
+
+	mockHTML := `
+	<html>
+		<head>
+			<link href="/style.css" />
+			<link href="https://external.com/theme.css" />
+		</head>
+		<body>
+			<a href="/about">About</a>
+			<a href="https://external.com/page">External Page</a>
+			<a href="mailto:someone@example.com">Email</a>
+		</body>
+	</html>`
+
+	mockClient := &mockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(strings.NewReader("OK")),
+			}, nil
+		},
+	}
+
+	newAnalyzer := NewAnalyzer(mockClient)
+	intCount, extCount, brokenCount, err := newAnalyzer.AnalyzeLinks(mockHTML, "http://localhost")
+
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if intCount != 2 {
+		t.Errorf("Expected 2 internal links, got %d", intCount)
+	}
+
+	if extCount != 2 {
+		t.Errorf("Expected 2 external links, got %d", extCount)
+	}
+
+	if brokenCount != 0 {
+		t.Errorf("Expected 0 broken links, got %d", brokenCount)
+	}
+}
