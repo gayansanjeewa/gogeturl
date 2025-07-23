@@ -1,6 +1,10 @@
 package utils
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestValidateURL(t *testing.T) {
 	tests := []struct {
@@ -16,11 +20,13 @@ func TestValidateURL(t *testing.T) {
 		{"missing host", "http://", true},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateURL(tt.input)
-			if (err != nil) != tt.error {
-				t.Errorf("ValidateURL(%q) error = %v, error = %v", tt.input, err, tt.error)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := ValidateURL(testCase.input)
+			if testCase.error {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
