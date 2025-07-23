@@ -49,3 +49,30 @@ func TestExtractTitle(t *testing.T) {
 		t.Errorf("Expected title 'Welcome!', got '%s'", title)
 	}
 }
+
+func TestCountHeadings(t *testing.T) {
+	mockHTML := `
+		<html>
+			<body>
+				<h1>Main</h1>
+				<h2>Sub1</h2>
+				<h2>Sub2</h2>
+				<h3>Detail</h3>
+			</body>
+		</html>`
+
+	newAnalyzer := NewAnalyzer(nil)
+	headings := newAnalyzer.CountHeadings(mockHTML)
+
+	expected := map[string]int{
+		"h1": 1,
+		"h2": 2,
+		"h3": 1,
+	}
+
+	for tag, count := range expected {
+		if headings[tag] != count {
+			t.Errorf("Expected %d for %s, got %d", count, tag, headings[tag])
+		}
+	}
+}
