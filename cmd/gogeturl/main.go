@@ -5,7 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 
+	"github.com/gayansanjeewa/gogeturl/internal/analyzer"
 	"github.com/gayansanjeewa/gogeturl/internal/handler"
 
 	"github.com/gin-gonic/gin"
@@ -29,10 +31,13 @@ func main() {
 		context.Next()
 	})
 
-	router.LoadHTMLGlob("./cmd/templates/*")
+	path, _ := filepath.Abs("./cmd/templates/*")
+	router.LoadHTMLGlob(path)
+
 	slog.Info(fmt.Sprintf("Starting the server at: http://localhost:%d", defaultPort))
 
-	router.POST("/analyze", handler.AnalyzeHandler) // TODO: Fix bug - upon POSTing form navigate to /analyze route
+	analyser := analyzer.NewAnalyzer(nil)
+	router.POST("/analyze", handler.AnalyzeHandler(analyser)) // TODO: Fix bug - upon POSTing form navigate to /analyze route
 
 	router.GET("/", func(context *gin.Context) {
 		slog.Info("Rendering index template")
