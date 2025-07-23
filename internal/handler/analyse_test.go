@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gayansanjeewa/gogeturl/internal/analyzer"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
@@ -60,15 +61,20 @@ func (m *failingMockAnalyzer) FetchHTML(url string) (string, error) {
 	return "", fmt.Errorf("mock fetch error")
 }
 
-func TestAnalyzeHandler(t *testing.T) {
+func setUp(a analyzer.Analyzer) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 
 	path, _ := filepath.Abs("../../cmd/templates/*")
 	router.LoadHTMLGlob(path)
 
+	router.POST("/analyze", AnalyzeHandler(a))
+	return router
+}
+
+func TestAnalyzeHandler(t *testing.T) {
 	mock := &mockAnalyzer{}
-	router.POST("/analyze", AnalyzeHandler(mock))
+	router := setUp(mock)
 
 	form := url.Values{}
 	form.Add("url", "http://example.com")
@@ -92,13 +98,8 @@ func TestAnalyzeHandler(t *testing.T) {
 }
 
 func TestAnalyzeHandler_EmptyURL(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	router := gin.Default()
-	path, _ := filepath.Abs("../../cmd/templates/*")
-	router.LoadHTMLGlob(path)
-
 	mock := &mockAnalyzer{}
-	router.POST("/analyze", AnalyzeHandler(mock))
+	router := setUp(mock)
 
 	form := url.Values{}
 	form.Add("url", "")
@@ -112,13 +113,8 @@ func TestAnalyzeHandler_EmptyURL(t *testing.T) {
 }
 
 func TestAnalyzeHandler_InvalidURL(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	router := gin.Default()
-	path, _ := filepath.Abs("../../cmd/templates/*")
-	router.LoadHTMLGlob(path)
-
 	mock := &mockAnalyzer{}
-	router.POST("/analyze", AnalyzeHandler(mock))
+	router := setUp(mock)
 
 	form := url.Values{}
 	form.Add("url", "invalid-url")
@@ -132,13 +128,8 @@ func TestAnalyzeHandler_InvalidURL(t *testing.T) {
 }
 
 func TestAnalyzeHandler_FetchFailure(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	router := gin.Default()
-	path, _ := filepath.Abs("../../cmd/templates/*")
-	router.LoadHTMLGlob(path)
-
 	mock := &failingMockAnalyzer{}
-	router.POST("/analyze", AnalyzeHandler(mock))
+	router := setUp(mock)
 
 	form := url.Values{}
 	form.Add("url", "http://example.com")
