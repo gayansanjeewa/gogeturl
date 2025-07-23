@@ -69,7 +69,7 @@ func TestFetchHTML(t *testing.T) {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
-	if !strings.Contains(body, "Welcome") {
+	if !strings.Contains(body, "Welcome!") {
 		t.Errorf("Expected body to contain title, got: %s", body)
 	}
 }
