@@ -87,19 +87,28 @@ This project uses standard Go practices to keep the code clean, easy to follow, 
 
 ### Run with Docker
 
-Alternatively, you can run the app using Docker:
+You can run the app with docker by using `make` commands:
 
 ```bash
-docker build -t gogeturl .
-docker run -p 8080:8080 gogeturl
+make docker-build
+make docker-run
 ```
-
-Or using Docker Compose:
-
-```bash
-docker-compose up --build
-```
-
 This uses the `.env` file to set the port and builds the Go application with a minimal runtime image.
+
+### Run with Makefile
+
+This project includes a `Makefile` to simplify development and deployment workflows. Just run `make` in the terminal to see the available commands:
+
+```bash
+  make build        Build the Go binary
+  make run          Run the application locally
+  make test         Run tests
+  make clean        Remove the built binary
+  make docker-build Build Docker image
+  make docker-run   Run Docker container
+  make lint         Run linters (if configured)
+```
+
+You can explore the `Makefile` for more supported targets.
 
 For more details, see the [INSTRUCTIONS.md](./INSTRUCTIONS.md) file.
