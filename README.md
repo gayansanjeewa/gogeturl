@@ -1,32 +1,68 @@
-# Test task: Web application for analyzing web pages
+# Go get url! 🏃‍♂️‍➡
 
-## Objective
+GoGetURL is a web application built with Go and Gin for analyzing HTML web pages. The app takes a URL input from the user, fetches the page content, and performs a detailed analysis including HTML version detection, title extraction, link categorization, header counting, and login form detection.
 
-The objective is to build a web application that does an analysis of a web-page/URL.
+## Features
 
-The application should show a form with a text field in which users can type in the URL of the web page to be analyzed. Additionally, to the form, it should contain a button to send a request to the server.
+- Detects the HTML version from the document doctype
+- Extracts the page title
+- Counts all headings (h1-h6) with a detailed breakdown
+- Identifies and categorizes internal, external, and broken links
+- Detects the presence of login forms based on input fields
+- Provides clear error messages if the URL is unreachable or invalid
+- Includes unit and integration tests
+- Leaner Git commit history with reference to the related PR 
+- Hot-reloading with Air for development
+- TODO: Dockerized for easy deployment
 
-After processing the results should be shown to the user.
+## Technologies Used
 
-Results should contain next information:
+- Go (Golang)
+- Gin web framework
+- HTML tokenizer (`golang.org/x/net/html`)
+- `slog` for structured logging
+- `air` for live reload
+- `stretchr/testify` for test assertions
+- Standard Go testing
 
--   What HTML version has the document?
--   What is the page title?
--   How many headings of what level are in the document?
--   How many internal and external links are in the document? Are there any inaccessible links and how many?
--   Does the page contain a login form?
 
-In case the URL given by the user is not reachable an error message should be presented to a user. The message should contain the HTTP status code and a useful error description.
+## Instructions
 
-## Restrictions
+### Setup Instructions
 
-1.  The application should be written in Golang
-2.  The application must be put under git control
-3.  You can use whatever libraries/tools you want.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/gayansanjeewa/gogeturl.git
+   cd gogeturl
+   ```
 
-## Submission
+2. **Install dependencies**
+   Ensure you have Go installed (1.20 or later), then run:
+   ```bash
+   go mod tidy
+   ```
 
-Please provide the result as a git repo bundled with:
+3. **Configure environment**
+   Copy the provided `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+   You can modify the `PORT` variable inside `.env` as needed.
 
--   A short text document that lists the main steps of building/deploying your solution as well as all assumptions/decisions you made in case of unclear requirements or missing information
--   Suggestions on possible improvements of the application
+4. **Run the application**
+   You can start the server using:
+   ```bash
+   go run ./cmd/gogeturl
+   ```
+   Or, for hot reload during development, install [Air](https://github.com/air-verse/air) and run:
+   ```bash
+   air
+   ```
+
+5. **Access the application**
+   Open your browser and go to (if the port is 8080):
+   ```
+   http://localhost:8080
+   ```
+
+For more details, see the [INSTRUCTIONS.md](./INSTRUCTIONS.md) file.
