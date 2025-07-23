@@ -39,6 +39,7 @@ This project uses standard Go practices to keep the code clean, easy to follow, 
 - **Error Handling**: Proper HTTP status codes and user-friendly messages are returned for all failure cases.
 - **No JavaScript**: The UI avoids JS for simplicity and backend focus, using Go templates for rendering.
 - **Testing Strategy**: Over 70% coverage with both unit and integration tests, testing user input flows and analyzer logic.
+- **CI Workflow**: Includes a basic GitHub Actions workflow that runs build and test steps using Makefile commands for consistency.
 
 ## Instructions
 
@@ -112,5 +113,7 @@ This project includes a `Makefile` to simplify development and deployment workfl
 ```
 
 You can explore the `Makefile` for more supported targets.
+
+These Makefile targets are also utilized in the GitHub Actions CI workflow.
 
 For more details, see the [INSTRUCTIONS.md](./INSTRUCTIONS.md) file.
