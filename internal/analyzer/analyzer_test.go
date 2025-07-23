@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type mockHTTPClient struct {
@@ -40,12 +42,10 @@ func TestDetectLoginForm(t *testing.T) {
 
 	analyzer := NewAnalyzer(nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := analyzer.DetectLoginForm(tt.html)
-			if result != tt.expected {
-				t.Errorf("Expected %v, got %v", tt.expected, result)
-			}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			result := analyzer.DetectLoginForm(testCase.html)
+			assert.Equal(t, testCase.expected, result)
 		})
 	}
 }
@@ -65,13 +65,8 @@ func TestFetchHTML(t *testing.T) {
 	analyzer := NewAnalyzer(mockClient)
 	body, err := analyzer.FetchHTML("http://example.com")
 
-	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
-	}
-
-	if !strings.Contains(body, "Welcome!") {
-		t.Errorf("Expected body to contain title, got: %s", body)
-	}
+	assert.NoError(t, err)
+	assert.Contains(t, body, "Welcome!")
 }
 
 func TestExtractTitle(t *testing.T) {
@@ -80,9 +75,7 @@ func TestExtractTitle(t *testing.T) {
 	analyzer := NewAnalyzer(nil)
 	title := analyzer.ExtractTitle(mockHTML)
 
-	if title != "Welcome!" {
-		t.Errorf("Expected title 'Welcome!', got '%s'", title)
-	}
+	assert.Equal(t, "Welcome!", title)
 }
 
 func TestCountHeadings(t *testing.T) {
@@ -106,9 +99,7 @@ func TestCountHeadings(t *testing.T) {
 	}
 
 	for tag, count := range expected {
-		if headings[tag] != count {
-			t.Errorf("Expected %d for %s, got %d", count, tag, headings[tag])
-		}
+		assert.Equal(t, count, headings[tag], "for heading %s", tag)
 	}
 }
 
@@ -145,21 +136,10 @@ func TestAnalyzeLinks(t *testing.T) {
 	analyzer := NewAnalyzer(mockClient)
 	intCount, extCount, brokenCount, err := analyzer.AnalyzeLinks(mockHTML, "http://localhost")
 
-	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
-	}
-
-	if intCount != 2 {
-		t.Errorf("Expected 2 internal links, got %d", intCount)
-	}
-
-	if extCount != 2 {
-		t.Errorf("Expected 2 external links, got %d", extCount)
-	}
-
-	if brokenCount != 0 {
-		t.Errorf("Expected 0 broken links, got %d", brokenCount)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, 2, intCount)
+	assert.Equal(t, 2, extCount)
+	assert.Equal(t, 0, brokenCount)
 }
 
 func TestDetectHTMLVersion(t *testing.T) {
@@ -187,12 +167,10 @@ func TestDetectHTMLVersion(t *testing.T) {
 
 	analyzer := NewAnalyzer(nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			version := analyzer.DetectHTMLVersion(tt.html)
-			if version != tt.expected {
-				t.Errorf("Expected version %s, got %s", tt.expected, version)
-			}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			version := analyzer.DetectHTMLVersion(testCase.html)
+			assert.Equal(t, testCase.expected, version)
 		})
 	}
 }
