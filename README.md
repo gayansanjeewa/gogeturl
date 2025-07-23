@@ -2,6 +2,8 @@
 
 GoGetURL is a web application built with Go and Gin for analyzing HTML web pages. The app takes a URL input from the user, fetches the page content, and performs a detailed analysis including HTML version detection, title extraction, link categorization, header counting, and login form detection.
 
+![Demo](https://github.com/user-attachments/assets/6888dd33-9871-4357-8aee-f8cfe45310d0)
+
 ## Features
 
 - Detects the HTML version from the document doctype
