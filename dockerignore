@@ -1,0 +1,24 @@
+# Go build artifacts
+bin/
+tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+gogeturl
+
+# Git and editor files
+.git
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Dependency directories
+vendor/
+
+# Environment files
+.env
+.env.*

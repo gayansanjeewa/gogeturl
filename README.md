@@ -13,7 +13,7 @@ GoGetURL is a web application built with Go and Gin for analyzing HTML web pages
 - Includes unit and integration tests
 - Leaner Git commit history with reference to the related PR 
 - Hot-reloading with Air for development
-- TODO: Dockerized for easy deployment
+- Dockerized for easy deployment with multi-stage builds
 
 ## Technical Overview & Engineering Practices
 
@@ -61,11 +61,19 @@ This project uses standard Go practices to keep the code clean, easy to follow, 
    ```
    You can modify the `PORT` variable inside `.env` as needed.
 
+
 4. **Run the application**
    You can start the server using:
    ```bash
    go run ./cmd/gogeturl
    ```
+
+   Or, build the app first and run the binary:
+   ```bash
+   go build -o gogeturl ./cmd/gogeturl
+   ./gogeturl
+   ```
+
    Or, for hot reload during development, install [Air](https://github.com/air-verse/air) and run:
    ```bash
    air
@@ -76,5 +84,22 @@ This project uses standard Go practices to keep the code clean, easy to follow, 
    ```
    http://localhost:8080
    ```
+
+### Run with Docker
+
+Alternatively, you can run the app using Docker:
+
+```bash
+docker build -t gogeturl .
+docker run -p 8080:8080 gogeturl
+```
+
+Or using Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+This uses the `.env` file to set the port and builds the Go application with a minimal runtime image.
 
 For more details, see the [INSTRUCTIONS.md](./INSTRUCTIONS.md) file.
