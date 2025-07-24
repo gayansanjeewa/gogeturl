@@ -60,15 +60,23 @@
     </section>
     {{ end }}
 
-    {{ if .Headings }}
+    {{ if not (eq .Headings nil) }}
     <section class="analysis-section">
         <h2>Headings Count</h2>
+        {{ if .Headings }}
         <ul>
             {{ range $level, $count := .Headings }}
             <li><span class="heading-level">{{ $level }}</span>: {{ $count }}</li>
             {{ end }}
         </ul>
+        {{ else }}
+        <p>No headings found on this page.</p>
+        {{ end }}
+    </section>
+    {{ end }}
 
+    {{ if or .InternalLinks .ExternalLinks .BrokenLinks }}
+    <section class="analysis-section">
         <h2>Link Analysis</h2>
         <ul>
             <li>Internal Links: {{ .InternalLinks }}</li>
@@ -76,7 +84,9 @@
             <li>Broken Links: {{ .BrokenLinks }}</li>
         </ul>
     </section>
+    {{ end }}
 
+    {{ if .HasLoginForm }}
     <section class="analysis-section">
         <h2>Login Form Detection</h2>
         <p>{{ if .HasLoginForm }}Yes{{ else }}No{{ end }}</p>
