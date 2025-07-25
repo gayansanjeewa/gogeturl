@@ -118,7 +118,7 @@ func (a *DefaultAnalyzer) CountHeadings(body string) map[string]int {
 
 // AnalyzeLinks parses links from the HTML body, resolving relative URLs and handling base tags,
 // and counts internal, external, and broken links. It skips mailto:, tel:, and javascript: schemes.
-func (a *DefaultAnalyzer) AnalyzeLinks(body, baseURL string) (internal, external, broken int, err error) {
+func (analyser *DefaultAnalyzer) AnalyzeLinks(body, baseURL string) (internal, external, broken int, err error) {
 	var baseParsed *url.URL
 	var links []string
 
@@ -162,7 +162,15 @@ func (a *DefaultAnalyzer) AnalyzeLinks(body, baseURL string) (internal, external
 		go func() {
 			defer waitGroup.Done()
 			for link := range jobs {
-				isInternal, isBroken := a.checkLinkAccessibility(link, parsedBaseURL)
+				resolvedURL, err := url.Parse(link)
+				if err != nil {
+					results <- linkResult{false, true}
+					continue
+				}
+
+				resolved := parsedBaseURL.ResolveReference(resolvedURL)
+				isInternal := sameHost(parsedBaseURL, resolved)
+				isBroken := analyser.checkLinkBroken(resolved.String())
 				results <- linkResult{isInternal, isBroken}
 			}
 		}()
@@ -230,28 +238,31 @@ func extractBaseHref(token html.Token) *url.URL {
 	return nil
 }
 
-// checkLinkAccessibility sends a HEAD request (or fallback GET) and returns whether the link is internal and if it is broken.
-func (a *DefaultAnalyzer) checkLinkAccessibility(link string, base *url.URL) (bool, bool) {
-	parsed, err := url.Parse(link)
-	if err != nil {
-		return false, true
-	}
-
-	isInternal := parsed.Host == "" || parsed.Host == base.Host
-
+// checkLinkBroken sends a HEAD request (or fallback GET) and returns whether the link is broken.
+func (analyser *DefaultAnalyzer) checkLinkBroken(link string) bool {
 	// Try HEAD request
-	req, _ := http.NewRequest("HEAD", parsed.String(), nil)
-	resp, err := a.Client.Do(req)
-	isBroken := err != nil || resp.StatusCode >= 400
+	req, _ := http.NewRequest("HEAD", link, nil)
+	resp, err := analyser.Client.Do(req)
+	if err != nil {
+		return true
+	}
+	defer resp.Body.Close()
 
 	// Fallback to GET if HEAD not allowed
-	if !isBroken && resp.StatusCode == http.StatusMethodNotAllowed {
-		req, _ = http.NewRequest("GET", parsed.String(), nil)
-		resp, err = a.Client.Do(req)
-		isBroken = err != nil || resp.StatusCode >= 400
+	if resp.StatusCode == http.StatusMethodNotAllowed {
+		req, _ = http.NewRequest("GET", link, nil)
+		resp, err = analyser.Client.Do(req)
+		if err != nil {
+			return true
+		}
+		defer resp.Body.Close()
 	}
 
-	return isInternal, isBroken
+	if resp.StatusCode >= 400 {
+		return true
+	}
+
+	return false
 }
 
 // DetectLoginForm checks if the HTML body contains a form with an input of a type "password"
@@ -321,4 +332,8 @@ func (a *DefaultAnalyzer) DetectHTMLVersion(body string) string {
 	}
 
 	return "Unknown"
+}
+
+func sameHost(base, other *url.URL) bool {
+	return base.Hostname() == other.Hostname()
 }

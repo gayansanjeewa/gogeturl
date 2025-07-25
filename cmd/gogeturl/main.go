@@ -19,9 +19,6 @@ const (
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
 		slog.Warn("No .env file found, using default port")
