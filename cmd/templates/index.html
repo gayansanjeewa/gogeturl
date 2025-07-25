@@ -15,7 +15,7 @@
         <p>A simple webpage analyzer — enter the URL of any page to get instant insights and hit Analyze!</p>
     </header>
 
-    <section class="url-form">
+    <section class="url-analysis-form">
         <form method="POST" action="/analyze" aria-label="URL Analysis Form">
             <div>
                 <label for="url-input">Enter URL to analyze:</label>
@@ -47,28 +47,36 @@
     {{ end }}
 
     {{ if .TitleTag }}
-    <section class="analysis-section">
+    <section class="section-break">
         <h2>Page Title</h2>
         <p>{{ .TitleTag }}</p>
     </section>
     {{ end }}
 
     {{ if .HTMLVersion }}
-    <section class="analysis-section">
+    <section class="section-break">
         <h2>HTML Version</h2>
         <p>{{ .HTMLVersion }}</p>
     </section>
     {{ end }}
 
-    {{ if .Headings }}
-    <section class="analysis-section">
+    {{ if not (eq .Headings nil) }}
+    <section class="section-break">
         <h2>Headings Count</h2>
+        {{ if .Headings }}
         <ul>
             {{ range $level, $count := .Headings }}
             <li><span class="heading-level">{{ $level }}</span>: {{ $count }}</li>
             {{ end }}
         </ul>
+        {{ else }}
+        <p>No headings found on this page.</p>
+        {{ end }}
+    </section>
+    {{ end }}
 
+    {{ if or .InternalLinks .ExternalLinks .BrokenLinks }}
+    <section class="section-break">
         <h2>Link Analysis</h2>
         <ul>
             <li>Internal Links: {{ .InternalLinks }}</li>
@@ -76,8 +84,10 @@
             <li>Broken Links: {{ .BrokenLinks }}</li>
         </ul>
     </section>
+    {{ end }}
 
-    <section class="analysis-section">
+    {{ if .HasLoginForm }}
+    <section class="section-break">
         <h2>Login Form Detection</h2>
         <p>{{ if .HasLoginForm }}Yes{{ else }}No{{ end }}</p>
     </section>
