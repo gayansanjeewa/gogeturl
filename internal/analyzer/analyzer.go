@@ -116,8 +116,9 @@ func (analyser *DefaultAnalyzer) CountHeadings(body string) map[string]int {
 	return headers
 }
 
-// AnalyzeLinks parses links from the HTML body, resolving relative URLs and handling base tags,
-// and counts internal, external, and broken links. It skips mailto:, tel:, and javascript: schemes.
+// AnalyzeLinks parses links from the HTML body, resolves relative URLs, handles <base> tags,
+// and counts internal, external, and broken links on the page.
+// It uses concurrency to efficiently check the accessibility of each link.
 func (analyser *DefaultAnalyzer) AnalyzeLinks(body, baseURL string) (internal, external, broken int, err error) {
 	var baseParsed *url.URL
 	var links []string
@@ -135,6 +136,7 @@ func (analyser *DefaultAnalyzer) AnalyzeLinks(body, baseURL string) (internal, e
 		token := tokenizer.Token()
 		switch token.Data {
 		case "base":
+			// Parse the <base> tag to resolve relative URLs correctly
 			baseParsed = extractBaseHref(token)
 		case "a", "link":
 			links = extractLinks(token, baseParsed, links)
@@ -151,7 +153,7 @@ func (analyser *DefaultAnalyzer) AnalyzeLinks(body, baseURL string) (internal, e
 		isBroken   bool
 	}
 
-	// Use buffered channels for jobs and results
+	// Use buffered channels for jobs and results to handle concurrency
 	jobs := make(chan string, len(links))
 	results := make(chan linkResult, len(links))
 
@@ -176,16 +178,16 @@ func (analyser *DefaultAnalyzer) AnalyzeLinks(body, baseURL string) (internal, e
 		}()
 	}
 
-	// Feed links to workers
+	// Feed links to workers via the jobs channel
 	for _, link := range links {
 		jobs <- link
 	}
-	close(jobs)
+	close(jobs) // Close jobs channel to signal no more links
 
 	waitGroup.Wait()
-	close(results)
+	close(results) // Close results channel after all workers finish
 
-	// Aggregate results
+	// Aggregate results from workers
 	for res := range results {
 		if res.isInternal {
 			internal++
@@ -200,6 +202,8 @@ func (analyser *DefaultAnalyzer) AnalyzeLinks(body, baseURL string) (internal, e
 	return internal, external, broken, nil
 }
 
+// extractLinks filters and extracts href attributes from <a> and <link> tags,
+// ignoring mailto:, tel:, and javascript: schemes to avoid non-http links.
 func extractLinks(token html.Token, baseParsed *url.URL, links []string) []string {
 	for _, attr := range token.Attr {
 		if attr.Key != "href" {
@@ -240,7 +244,7 @@ func extractBaseHref(token html.Token) *url.URL {
 
 // checkLinkBroken sends a HEAD request (or fallback GET) and returns whether the link is broken.
 func (analyser *DefaultAnalyzer) checkLinkBroken(link string) bool {
-	// Try HEAD request
+	// Try HEAD request to check link quickly without downloading the body
 	req, err := http.NewRequest("HEAD", link, nil)
 	if err != nil {
 		return true
@@ -256,7 +260,7 @@ func (analyser *DefaultAnalyzer) checkLinkBroken(link string) bool {
 		}
 	}()
 
-	// Fallback to GET if HEAD not allowed
+	// Fallback to GET if HEAD not allowed, since some servers do not support HEAD requests
 	if resp.StatusCode == http.StatusMethodNotAllowed {
 		req, err = http.NewRequest("GET", link, nil)
 		if err != nil {
@@ -291,11 +295,13 @@ func (analyser *DefaultAnalyzer) DetectLoginForm(body string) bool {
 		token := tokenizer.Token()
 		switch token.Data {
 		case "input":
+			// Detect login form by presence of input[type=password]
 			inputType := strings.ToLower(getAttributeValue(token, "type"))
 			if inputType == "password" {
 				return true
 			}
 		case "form":
+			// Also detect login forms by checking if form's action or class attribute contains "login"
 			action := strings.ToLower(getAttributeValue(token, "action"))
 			class := strings.ToLower(getAttributeValue(token, "class"))
 			if strings.Contains(action, "login") || strings.Contains(class, "login") {
