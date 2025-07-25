@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	defaultPort = 8080 // TODO: get from environment variables
+	defaultPort = 8080 // Will be overwritten by .env
 )
 
 func main() {
