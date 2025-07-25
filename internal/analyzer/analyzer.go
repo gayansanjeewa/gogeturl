@@ -41,13 +41,13 @@ func NewAnalyzer(client HTTPClient) Analyzer {
 const maxWorkers = 10
 
 // FetchHTML fetches the HTML content of the page and returns it as a string.
-func (a *DefaultAnalyzer) FetchHTML(targetURL string) (string, error) {
+func (analyser *DefaultAnalyzer) FetchHTML(targetURL string) (string, error) {
 	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := a.Client.Do(req)
+	resp, err := analyser.Client.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +68,7 @@ func (a *DefaultAnalyzer) FetchHTML(targetURL string) (string, error) {
 }
 
 // ExtractTitle returns the content of the <title> tag from the HTML body string
-func (a *DefaultAnalyzer) ExtractTitle(body string) string {
+func (analyser *DefaultAnalyzer) ExtractTitle(body string) string {
 	var title string
 	tokenizer := html.NewTokenizer(strings.NewReader(body))
 	for {
@@ -92,7 +92,7 @@ func (a *DefaultAnalyzer) ExtractTitle(body string) string {
 
 // CountHeadings counts the number of headers in the HTML document, sorted by type.
 // It accepts the body of the HTML document as a string and returns a map of header types to their respective counts.
-func (a *DefaultAnalyzer) CountHeadings(body string) map[string]int {
+func (analyser *DefaultAnalyzer) CountHeadings(body string) map[string]int {
 	headers := make(map[string]int)
 	headerRegex := regexp.MustCompile(`^h[1-6]$`)
 
@@ -241,33 +241,44 @@ func extractBaseHref(token html.Token) *url.URL {
 // checkLinkBroken sends a HEAD request (or fallback GET) and returns whether the link is broken.
 func (analyser *DefaultAnalyzer) checkLinkBroken(link string) bool {
 	// Try HEAD request
-	req, _ := http.NewRequest("HEAD", link, nil)
+	req, err := http.NewRequest("HEAD", link, nil)
+	if err != nil {
+		return true
+	}
+
 	resp, err := analyser.Client.Do(req)
 	if err != nil {
 		return true
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	// Fallback to GET if HEAD not allowed
 	if resp.StatusCode == http.StatusMethodNotAllowed {
-		req, _ = http.NewRequest("GET", link, nil)
+		req, err = http.NewRequest("GET", link, nil)
+		if err != nil {
+			return true
+		}
 		resp, err = analyser.Client.Do(req)
 		if err != nil {
 			return true
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+		}()
 	}
 
-	if resp.StatusCode >= 400 {
-		return true
-	}
-
-	return false
+	return resp.StatusCode >= 400
 }
 
 // DetectLoginForm checks if the HTML body contains a form with an input of a type "password"
 // or any attribute matches the word "login"
-func (a *DefaultAnalyzer) DetectLoginForm(body string) bool {
+func (analyser *DefaultAnalyzer) DetectLoginForm(body string) bool {
 	tokenizer := html.NewTokenizer(strings.NewReader(body))
 	for {
 		tokenType := tokenizer.Next()
@@ -307,7 +318,7 @@ func getAttributeValue(tag html.Token, key string) string {
 }
 
 // DetectHTMLVersion determines the HTML version by matching known DOCTYPE declarations in the HTML body.
-func (a *DefaultAnalyzer) DetectHTMLVersion(body string) string {
+func (analyser *DefaultAnalyzer) DetectHTMLVersion(body string) string {
 	htmlDeclarations := map[string]string{
 		"HTML 5":                 "<!DOCTYPE html>",
 		"HTML 4.01 Strict":       "-//W3C//DTD HTML 4.01//EN",
