@@ -28,6 +28,7 @@ func (m *mockAnalyzer) FetchHTML(url string) (string, error) {
 				<a href="/internal">Internal Link</a>
 				<a href="http://external.com">External Link</a>
 				<a href="http://broken-link.com">Broken Link</a>
+				<h2>Login Form Detection</h2>
 			</body>
 		</html>
 	`, nil
@@ -46,7 +47,7 @@ func (m *mockAnalyzer) CountHeadings(body string) map[string]int {
 }
 
 func (m *mockAnalyzer) DetectLoginForm(body string) bool {
-	return false
+	return true
 }
 
 func (m *mockAnalyzer) AnalyzeLinks(body, baseURL string) (int, int, int, error) {
